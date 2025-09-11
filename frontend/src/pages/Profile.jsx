@@ -18,8 +18,8 @@ const Profile = () => {
         setLoading(true);
         const [userResponse, postsResponse, offersResponse] = await Promise.all([
           axios.get(`/api/users/${userId}`),
-          axios.get(`/api/help?author=${userId}`),
-          axios.get(`/api/help?helper=${userId}`)
+          axios.get(`/api/help/author/${userId}`), 
+          axios.get(`/api/help/helper/${userId}`) 
         ]);
 
         setUser(userResponse.data);
@@ -105,7 +105,6 @@ const Profile = () => {
   if (!user) {
     return <div className="text-center py-12 text-gray-500">User not found</div>;
   }
-
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Profile Header */}
@@ -116,7 +115,7 @@ const Profile = () => {
               <img src={user.avatar} alt={`${user.name}'s avatar`} className="w-full h-full object-cover" />
             ) : (
               <span className="text-3xl text-gray-500">
-                {user.name.charAt(0).toUpperCase()}
+                {user.username.charAt(0).toUpperCase()}
               </span>
             )}
           </div>

@@ -27,6 +27,7 @@ const HelpPostList = () => {
     fetchPosts();
   }, [filters]);
 
+
   const fetchPosts = async () => {
     try {
       setLoading(true);
@@ -64,9 +65,7 @@ const HelpPostList = () => {
 
   const handleAcceptHelp = async (postId, helperId) => {
     try {
-
-
-      const response = await axios.put(`/api/help/${postId}/accept/${helperId}`);
+      const response = await axios.put(`/api/help/${postId}/helpers/${helperId}/accept`);
       setPosts(posts.map(post => 
         post._id === postId ? response.data : post
       ));
@@ -80,10 +79,11 @@ const HelpPostList = () => {
 
   const handleRejectHelp = async (postId, helperId) => {
     try {
-      const response = await axios.put(`/api/help/${postId}/reject/${helperId}`);
+      const response = await axios.put(`/api/help/${postId}/helpers/${helperId}/reject`);
       setPosts(posts.map(post => 
         post._id === postId ? response.data : post
-      ));      return { success: true };
+      ));
+      return { success: true };
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Failed to reject help offer';
       console.error('Error rejecting help:', error);

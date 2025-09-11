@@ -1,17 +1,12 @@
 const { validationResult } = require('express-validator');
-const Conversation = require('../models/Conversation');
-const Message = require('../models/Message');
+const ConversationRepository = require('../repositories/ConversationRepository');
+const MessageRepository = require('../repositories/MessageRepository');
 
 // Get user's conversations
 const getConversations = async (req, res) => {
   try {
-    const conversations = await Conversation.find({
-      participants: req.user._id
-    })
-      .populate('participants', 'username email studentId')
-      .populate('helpPost', 'title')
-      .populate('lastMessage')
-      .sort({ lastActivity: -1 });
+    const conversationRepository = new ConversationRepository();
+    const conversations = await conversationRepository.getUserConversations(req.user._id);
 
     res.json(conversations);
   } catch (error) {
@@ -24,21 +19,16 @@ const getConversations = async (req, res) => {
 const getConversation = async (req, res) => {
   try {
     const { conversationId } = req.params;
+    const conversationRepository = new ConversationRepository();
+    const messageRepository = new MessageRepository();
 
-    const conversation = await Conversation.findOne({
-      _id: conversationId,
-      participants: req.user._id
-    })
-      .populate('participants', 'username email studentId')
-      .populate('helpPost', 'title');
+    const conversation = await conversationRepository.findConversation(conversationId, req.user._id);
 
     if (!conversation) {
       return res.status(404).json({ message: 'Conversation not found' });
     }
 
-    const messages = await Message.find({ conversation: conversationId })
-      .populate('sender', 'username')
-      .sort({ createdAt: 1 });
+    const messages = await messageRepository.getConversationMessages(conversationId);
 
     res.json({
       conversation,
@@ -60,33 +50,25 @@ const sendMessage = async (req, res) => {
 
     const { conversationId } = req.params;
     const { content } = req.body;
+    const conversationRepository = new ConversationRepository();
+    const messageRepository = new MessageRepository();
 
     // Check if user is part of the conversation
-    const conversation = await Conversation.findOne({
-      _id: conversationId,
-      participants: req.user._id
-    });
+    const conversation = await conversationRepository.findConversation(conversationId, req.user._id);
 
     if (!conversation) {
       return res.status(404).json({ message: 'Conversation not found' });
     }
 
-    // Create new message
-    const message = new Message({
+    // Create new message using repository
+    const message = await messageRepository.createMessage({
       conversation: conversationId,
       sender: req.user._id,
       content
     });
 
-    await message.save();
-
     // Update conversation's last message and activity
-    conversation.lastMessage = message._id;
-    conversation.lastActivity = new Date();
-    await conversation.save();
-
-    // Populate sender info before sending response
-    await message.populate('sender', 'username');
+    await conversationRepository.updateLastMessage(conversationId, message._id);
 
     res.status(201).json(message);
   } catch (error) {
@@ -99,26 +81,18 @@ const sendMessage = async (req, res) => {
 const markAsRead = async (req, res) => {
   try {
     const { conversationId } = req.params;
+    const conversationRepository = new ConversationRepository();
+    const messageRepository = new MessageRepository();
 
     // Check if user is part of the conversation
-    const conversation = await Conversation.findOne({
-      _id: conversationId,
-      participants: req.user._id
-    });
+    const conversation = await conversationRepository.findConversation(conversationId, req.user._id);
 
     if (!conversation) {
       return res.status(404).json({ message: 'Conversation not found' });
     }
 
     // Mark all messages from other participants as read
-    await Message.updateMany(
-      {
-        conversation: conversationId,
-        sender: { $ne: req.user._id },
-        read: false
-      },
-      { $set: { read: true } }
-    );
+    await messageRepository.markMessagesAsRead(conversationId, req.user._id);
 
     res.json({ message: 'Messages marked as read' });
   } catch (error) {

@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const http = require('http'); // Add this import
+const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 require('dotenv').config();
@@ -10,47 +10,94 @@ const authRoutes = require('./routes/authRoutes');
 const helpPostRoutes = require('./routes/helpPostRoutes');
 const userRoutes = require('./routes/userRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const taskRoutes = require('./routes/taskRoutes');
+
 
 // Import socket setup
 const setupMessagingSocket = require('./socket/messaging');
 
-const app = express();
+const notificationRoutes = require('./routes/notificationRoutes'); // New route
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Import services
+const NotificationService = require('./services/NotificationService');
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/community-help', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.log(err));
+// Import Database Singleton
+const Database = require('./patterns/DatabaseSingleton');
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/help', helpPostRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/messages', messageRoutes);
-
-// Create HTTP server
-const server = http.createServer(app);
-
-// Initialize Socket.IO
-const io = socketIo(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
-    methods: ["GET", "POST"]
+class Server {
+  constructor() {
+    this.app = express();
+    this.server = null;
+    this.io = null;
+    this.notificationService = null;
+    this.setupMiddleware();
+    this.setupRoutes();
+    this.setupDatabase();
+    this.setupSocket();
   }
-});
 
-// Setup messaging socket
-setupMessagingSocket(io);
+  setupMiddleware() {
+    this.app.use(cors());
+    this.app.use(express.json());
+  }
 
-const PORT = process.env.PORT || 5001;
+  setupRoutes() {
+    this.app.use('/api/auth', authRoutes);
+    this.app.use('/api/help', helpPostRoutes);
+    this.app.use('/api/users', userRoutes);
+    this.app.use('/api/messages', messageRoutes);
+    this.app.use('api/task', taskRoutes);
+    this.app.use('/api/notifications', notificationRoutes);
+    
+   
+  }
 
-// Use server instead of app for listening
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  setupDatabase() {
+    const database = new Database();
+    database.connect();
+  }
+
+  setupSocket() {
+    this.server = http.createServer(this.app);
+    this.io = socketIo(this.server, {
+      cors: {
+        origin: process.env.CLIENT_URL || "http://localhost:3000",
+        methods: ["GET", "POST"]
+      }
+    });
+    
+    this.notificationService = new NotificationService(this.io);
+    
+    // Setup messaging socket with notification service
+    require('./socket/messaging')(this.io, this.notificationService);
+    
+    console.log('Notification service initialized with', this.notificationService.getObserverCount(), 'observers');
+
+    setupMessagingSocket(this.io);
+    
+  }
+
+  
+
+  start(port = process.env.PORT || 5001) {
+    this.server.listen(port, () => {
+      console.log(`Server running on port ${port}`);
+    });
+    
+    return this.server;
+  }
+
+  getApp() {
+    return this.app;
+  }
+
+  getIO() {
+    return this.io;
+  }
+}
+
+// Create and start the server
+const server = new Server();
+server.start();
+
+module.exports = server;

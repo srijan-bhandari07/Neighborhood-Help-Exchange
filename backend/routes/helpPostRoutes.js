@@ -1,5 +1,8 @@
 const express = require('express');
 const { body } = require('express-validator');
+const authMiddleware = require('../middleware/authMiddleware');
+const HelpPostRepository = require('../repositories/HelpPostRepository');
+
 const {
   createHelpPost,
   getAllHelpPosts,
@@ -9,9 +12,8 @@ const {
   rejectHelpOffer,
   updateHelpPostStatus,
   deleteHelpPost,
-  updateHelpPost // Make sure this is exported from your controller
+  updateHelpPost
 } = require('../controllers/helpPostController');
-const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -35,6 +37,36 @@ router.get('/', authMiddleware, getAllHelpPosts);
 // @desc    Get user's help posts
 // @access  Private
 router.get('/my-posts', authMiddleware, getUserHelpPosts);
+
+// @route   GET /api/help/author/:userId
+// @desc    Get help posts by author
+// @access  Private
+router.get('/author/:userId', authMiddleware, async (req, res) => {
+  try {
+    const helpPostRepository = new HelpPostRepository();
+    const posts = await helpPostRepository.getPostsByAuthor(req.params.userId);
+    
+    res.json({ helpPosts: posts });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/help/helper/:userId
+// @desc    Get help posts where user has offered help
+// @access  Private
+router.get('/helper/:userId', authMiddleware, async (req, res) => {
+  try {
+    const helpPostRepository = new HelpPostRepository();
+    const posts = await helpPostRepository.getPostsByHelper(req.params.userId);
+    
+    res.json({ helpPosts: posts });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // @route   POST /api/help/:id/offer-help
 // @desc    Offer help on a post
@@ -61,14 +93,13 @@ router.put('/:id/status', authMiddleware, [
 // @route   PUT /api/help/:id
 // @desc    Update help post
 // @access  Private
-// FIXED: Use updateHelpPost instead of updateHelpPostStatus
 router.put('/:id', authMiddleware, [
   body('title').trim().isLength({ min: 1 }).withMessage('Title is required'),
   body('description').trim().isLength({ min: 1 }).withMessage('Description is required'),
   body('category').isIn(['Shopping', 'Transport', 'Study Help', 'Food Delivery', 'Ride Share', 'Book Exchange', 'Project Help', 'Other']).withMessage('Invalid category'),
   body('location').trim().isLength({ min: 1 }).withMessage('Location is required'),
   body('neededBy').isISO8601().withMessage('Valid needed by date is required')
-], updateHelpPost); // Changed from updateHelpPostStatus to updateHelpPost
+], updateHelpPost);
 
 // @route   DELETE /api/help/:id
 // @desc    Delete help post

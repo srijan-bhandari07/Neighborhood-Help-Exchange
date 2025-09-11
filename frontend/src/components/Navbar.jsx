@@ -1,14 +1,12 @@
+// components/Navbar.jsx
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
+import NotificationBell from './NotificationBell';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
-
-  const handleLogout = () => {
-    logout();
-  };
 
   if (!user) {
     return null;
@@ -60,6 +58,10 @@ const Navbar = () => {
                 Profile
               </Link>
             </div>
+            
+            {/* Notification Bell */}
+            <NotificationBell />
+            
             <div className="flex items-center">
               <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2">
                 <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,7 +74,7 @@ const Navbar = () => {
               </div>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={logout}
               className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
             >
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
