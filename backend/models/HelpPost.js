@@ -59,4 +59,4 @@ const helpPostSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('helpposts', helpPostSchema);
+module.exports = mongoose.model('HelpPost', helpPostSchema);

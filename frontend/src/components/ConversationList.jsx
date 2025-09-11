@@ -2,16 +2,31 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 
 const ConversationList = () => {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { user } = useAuth();
+  const { socket, isConnected } = useSocket();
 
   useEffect(() => {
     fetchConversations();
-  }, []);
+    
+    if (socket && isConnected) {
+      const handleNewMessage = (message) => {
+        // Refresh conversations when a new message is received
+        fetchConversations();
+      };
+
+      socket.on('new_message', handleNewMessage);
+
+      return () => {
+        socket.off('new_message', handleNewMessage);
+      };
+    }
+  }, [socket, isConnected]);
 
   const fetchConversations = async () => {
     try {
@@ -71,6 +86,9 @@ const ConversationList = () => {
     <div className="bg-white rounded-lg shadow-sm border">
       <div className="p-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">Messages</h2>
+        <p className="text-sm text-gray-500 mt-1">
+          {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
+        </p>
       </div>
 
       {error && (
@@ -79,7 +97,7 @@ const ConversationList = () => {
         </div>
       )}
 
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
         {conversations.length === 0 ? (
           <div className="p-8 text-center">
             <div className="text-gray-500 mb-2">No conversations yet</div>

@@ -24,7 +24,7 @@ export const SocketProvider = ({ children }) => {
           auth: {
             token: token
           },
-          transports: ['websocket', 'polling'] // Add fallback transports
+          transports: ['websocket', 'polling']
         });
 
         newSocket.on('connect', () => {
@@ -45,17 +45,16 @@ export const SocketProvider = ({ children }) => {
         setSocket(newSocket);
 
         return () => {
-          newSocket.off('connect');
-          newSocket.off('disconnect');
-          newSocket.off('connect_error');
-          newSocket.close();
+          if (newSocket) {
+            newSocket.disconnect();
+          }
         };
       } catch (error) {
         console.error('Error creating socket connection:', error);
       }
     } else {
       if (socket) {
-        socket.close();
+        socket.disconnect();
         setSocket(null);
         setIsConnected(false);
       }

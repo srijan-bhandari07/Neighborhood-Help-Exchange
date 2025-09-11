@@ -29,23 +29,32 @@ const MessageList = () => {
   useEffect(() => {
     if (!socket || !isConnected) return;
 
+    // Join conversation room
+    socket.emit('join_conversation', conversationId);
+
     const handleNewMessage = (message) => {
       if (message.conversation === conversationId) {
         setMessages(prev => [...prev, message]);
+        // Mark as read if it's from the other participant
+        if (message.sender._id !== user._id && message.sender._id !== user.id) {
+          markAsRead();
+        }
       }
     };
 
     socket.on('new_message', handleNewMessage);
 
     return () => {
+      socket.emit('leave_conversation', conversationId);
       socket.off('new_message', handleNewMessage);
     };
-  }, [socket, isConnected, conversationId]);
+  }, [socket, isConnected, conversationId, user]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+ 
   const fetchConversation = async () => {
     try {
       setLoading(true);
@@ -54,12 +63,20 @@ const MessageList = () => {
       setMessages(response.data.messages || []);
       
       // Mark messages as read
-      await axios.put(`/api/messages/conversations/${conversationId}/read`);
+      await markAsRead();
     } catch (error) {
       console.error('Error fetching conversation:', error);
       setError('Failed to load conversation');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const markAsRead = async () => {
+    try {
+      await axios.put(`/api/messages/conversations/${conversationId}/read`);
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
     }
   };
 
@@ -84,8 +101,6 @@ const MessageList = () => {
           { content: newMessage.trim() }
         );
         setMessages(prev => [...prev, response.data]);
-        // Refresh conversation to get latest messages
-        fetchConversation();
       }
       
       setNewMessage('');

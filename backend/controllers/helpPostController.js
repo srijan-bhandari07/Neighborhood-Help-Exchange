@@ -1,6 +1,12 @@
 const { validationResult } = require('express-validator');
-const HelpPost = require('../models/HelpPost');
-const Conversation = require('../models/Conversation');
+const HelpPostRepository = require('../repositories/HelpPostRepository');
+const ConversationRepository = require('../repositories/ConversationRepository');
+const { NotificationSubject, HelpPostNotificationObserver } = require('../patterns/NotificationObserver');
+
+// Create notification subject
+const notificationSubject = new NotificationSubject();
+const helpPostObserver = new HelpPostNotificationObserver();
+notificationSubject.addObserver(helpPostObserver);
 
 // Create Help Post
 const createHelpPost = async (req, res) => {
@@ -11,8 +17,9 @@ const createHelpPost = async (req, res) => {
     }
 
     const { title, description, category, location, neededBy } = req.body;
+    const helpPostRepository = new HelpPostRepository();
 
-    const helpPost = new HelpPost({
+    const helpPost = await helpPostRepository.create({
       title,
       description,
       category,
@@ -21,8 +28,13 @@ const createHelpPost = async (req, res) => {
       author: req.user._id
     });
 
-    await helpPost.save();
     await helpPost.populate('author', 'username email studentId');
+
+    // Notify observers
+    notificationSubject.notifyObservers({ 
+      helpPost, 
+      eventType: 'created' 
+    });
 
     res.status(201).json(helpPost);
   } catch (error) {
@@ -35,26 +47,15 @@ const createHelpPost = async (req, res) => {
 const getAllHelpPosts = async (req, res) => {
   try {
     const { category, status, page = 1, limit = 10 } = req.query;
+    const helpPostRepository = new HelpPostRepository();
     
     let filter = {};
     if (category) filter.category = category;
     if (status) filter.status = status;
 
-    const helpPosts = await HelpPost.find(filter)
-      .populate('author', 'username email studentId')
-      .populate('helpers.user', 'username email studentId')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+    const result = await helpPostRepository.getHelpPostsWithFilters(filter, page, limit);
 
-    const total = await HelpPost.countDocuments(filter);
-
-    res.json({
-      helpPosts,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      total
-    });
+    res.json(result);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
@@ -64,10 +65,8 @@ const getAllHelpPosts = async (req, res) => {
 // Get User's Help Posts
 const getUserHelpPosts = async (req, res) => {
   try {
-    const helpPosts = await HelpPost.find({ author: req.user._id })
-      .populate('author', 'username email studentId')
-      .populate('helpers.user', 'username email studentId')
-      .sort({ createdAt: -1 });
+    const helpPostRepository = new HelpPostRepository();
+    const helpPosts = await helpPostRepository.getUserHelpPosts(req.user._id);
 
     res.json(helpPosts);
   } catch (error) {
@@ -81,8 +80,9 @@ const offerHelp = async (req, res) => {
   try {
     const { id } = req.params;
     const { message = '' } = req.body;
+    const helpPostRepository = new HelpPostRepository();
 
-    const helpPost = await HelpPost.findById(id);
+    const helpPost = await helpPostRepository.findById(id);
     if (!helpPost) {
       return res.status(404).json({ message: 'Help post not found' });
     }
@@ -101,19 +101,17 @@ const offerHelp = async (req, res) => {
       return res.status(400).json({ message: 'You have already offered help for this post' });
     }
 
-    // Add helper
-    helpPost.helpers.push({
+    // Add helper using repository
+    await helpPostRepository.addHelper(id, {
       user: req.user._id,
       message,
       offeredAt: new Date(),
       status: 'pending'
     });
 
-    await helpPost.save();
-    await helpPost.populate('author', 'username email studentId');
-    await helpPost.populate('helpers.user', 'username email studentId');
+    const updatedPost = await helpPostRepository.findByIdAndPopulate(id);
 
-    res.json(helpPost);
+    res.json(updatedPost);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
@@ -121,14 +119,14 @@ const offerHelp = async (req, res) => {
 };
 
 // Accept Help Offer
+// Accept Help Offer
 const acceptHelpOffer = async (req, res) => {
   try {
-    console.log('User making request:', req.user);
-    console.log('Params:', req.params);
-
     const { id, helperId } = req.params;
+    const helpPostRepository = new HelpPostRepository();
+    const conversationRepository = new ConversationRepository();
 
-    const helpPost = await HelpPost.findById(id);
+    const helpPost = await helpPostRepository.findById(id);
     if (!helpPost) {
       return res.status(404).json({ message: 'Help post not found' });
     }
@@ -138,34 +136,34 @@ const acceptHelpOffer = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to accept help offers' });
     }
 
-    // Find and update the helper 
+    // Find the helper
     const helper = helpPost.helpers.id(helperId);
     if (!helper) {
       return res.status(404).json({ message: 'Helper not found' });
     }
 
-    helper.status = 'accepted';
-    helpPost.status = 'in-progress';
-    await helpPost.save();
+    // Update helper status and post status
+    await helpPostRepository.updateHelperStatus(id, helperId, 'accepted');
+    
+    // Only set to in-progress if it's not already completed
+    if (helpPost.status !== 'completed') {
+      await helpPostRepository.update(id, { status: 'in-progress' });
+    }
 
     // Create a conversation between the author and the helper
     try {
-      const conversation = new Conversation({
-        participants: [helpPost.author, helper.user],
-        helpPost: helpPost._id
-      });
-      await conversation.save();
+      await conversationRepository.findOrCreateConversation(
+        helpPost._id,
+        [helpPost.author, helper.user]
+      );
     } catch (error) {
-      // If conversation already exists, that's fine
-      if (error.code !== 11000) {
-        console.error('Error creating conversation:', error);
-      }
+      console.error('Error creating conversation:', error);
+      // Don't fail the whole request if conversation creation fails
     }
 
-    await helpPost.populate('author', 'username email studentId');
-    await helpPost.populate('helpers.user', 'username email studentId');
+    const updatedPost = await helpPostRepository.findByIdAndPopulate(id);
 
-    res.json(helpPost);
+    res.json(updatedPost);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
@@ -176,8 +174,9 @@ const acceptHelpOffer = async (req, res) => {
 const rejectHelpOffer = async (req, res) => {
   try {
     const { id, helperId } = req.params;
+    const helpPostRepository = new HelpPostRepository();
 
-    const helpPost = await HelpPost.findById(id);
+    const helpPost = await helpPostRepository.findById(id);
     if (!helpPost) {
       return res.status(404).json({ message: 'Help post not found' });
     }
@@ -188,18 +187,11 @@ const rejectHelpOffer = async (req, res) => {
     }
 
     // Find and update the helper status
-    const helper = helpPost.helpers.id(helperId);
-    if (!helper) {
-      return res.status(404).json({ message: 'Helper not found' });
-    }
+    await helpPostRepository.updateHelperStatus(id, helperId, 'rejected');
 
-    helper.status = 'rejected';
-    await helpPost.save();
+    const updatedPost = await helpPostRepository.findByIdAndPopulate(id);
 
-    await helpPost.populate('author', 'username email studentId');
-    await helpPost.populate('helpers.user', 'username email studentId');
-
-    res.json(helpPost);
+    res.json(updatedPost);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
@@ -211,8 +203,9 @@ const updateHelpPostStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+    const helpPostRepository = new HelpPostRepository();
 
-    const helpPost = await HelpPost.findById(id);
+    const helpPost = await helpPostRepository.findById(id);
     if (!helpPost) {
       return res.status(404).json({ message: 'Help post not found' });
     }
@@ -231,12 +224,10 @@ const updateHelpPostStatus = async (req, res) => {
       return res.status(400).json({ message: 'Cannot set to in-progress without accepting a helper' });
     }
 
-    helpPost.status = status;
-    await helpPost.save();
-    await helpPost.populate('author', 'username email studentId');
-    await helpPost.populate('helpers.user', 'username email studentId');
+    // Update status
+    const updatedPost = await helpPostRepository.update(id, { status });
 
-    res.json(helpPost);
+    res.json(updatedPost);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
@@ -253,8 +244,9 @@ const updateHelpPost = async (req, res) => {
 
     const { id } = req.params;
     const { title, description, category, location, neededBy } = req.body;
+    const helpPostRepository = new HelpPostRepository();
 
-    const helpPost = await HelpPost.findById(id);
+    const helpPost = await helpPostRepository.findById(id);
     if (!helpPost) {
       return res.status(404).json({ message: 'Help post not found' });
     }
@@ -264,18 +256,16 @@ const updateHelpPost = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this post' });
     }
 
-    // Update the post fields
-    helpPost.title = title;
-    helpPost.description = description;
-    helpPost.category = category;
-    helpPost.location = location;
-    helpPost.neededBy = neededBy;
+    // Update the post
+    const updatedPost = await helpPostRepository.update(id, {
+      title,
+      description,
+      category,
+      location,
+      neededBy
+    });
 
-    await helpPost.save();
-    await helpPost.populate('author', 'username email studentId');
-    await helpPost.populate('helpers.user', 'username email studentId');
-
-    res.json(helpPost);
+    res.json(updatedPost);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
@@ -286,8 +276,9 @@ const updateHelpPost = async (req, res) => {
 const deleteHelpPost = async (req, res) => {
   try {
     const { id } = req.params;
+    const helpPostRepository = new HelpPostRepository();
 
-    const helpPost = await HelpPost.findById(id);
+    const helpPost = await helpPostRepository.findById(id);
     if (!helpPost) {
       return res.status(404).json({ message: 'Help post not found' });
     }
@@ -297,7 +288,7 @@ const deleteHelpPost = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this post' });
     }
 
-    await HelpPost.findByIdAndDelete(id);
+    await helpPostRepository.delete(id);
     res.json({ message: 'Help post deleted successfully' });
   } catch (error) {
     console.error(error);

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const HelpPostCard = ({
   post,
@@ -18,6 +19,7 @@ const HelpPostCard = ({
   const [loading, setLoading] = useState(false);
   const [actioningHelperId, setActioningHelperId] = useState(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   if (!post) return null;
 
@@ -48,24 +50,25 @@ const HelpPostCard = ({
       minute: '2-digit'
     });
   };
-  const canMessage = () => {
-    if (!user || !post) return false;
+
+  const canMessage = (helper) => {
+    if (!user || !post || !helper) return false;
     
-    // Check if user is author and there are accepted helpers
-    const isUserAuthor = String(post.author._id) === String(user._id || user.id);
-    if (isUserAuthor) {
-      return post.helpers.some(helper => helper.status === 'accepted');
+    // Check if user is author and helper is accepted
+    if (isUserAuthor && helper.status === 'accepted') {
+      return true;
     }
     
-    // Check if user is an accepted helper
-    return post.helpers.some(helper => 
-      (String(helper.user._id) === String(user._id || user.id)) && 
-      helper.status === 'accepted'
-    );
+    // Check if user is the helper and they're accepted
+    if (String(helper.user?._id) === currentUserId && helper.status === 'accepted') {
+      return true;
+    }
+    
+    return false;
   };
 
-  // Add this function to handle messaging
-  const handleMessage = () => {
+  const handleMessage = (helper) => {
+    // Navigate to messages page - you might want to pass conversation info
     navigate('/messages');
   };
 
@@ -201,7 +204,19 @@ const HelpPostCard = ({
                     <p className="text-sm text-gray-600 mt-2">{helper.message}</p>
                   )}
 
-                  {(isUserAuthor || isUserAuthor) && helper.status === 'pending' && (
+                  {/* Message button for both author and accepted helper */}
+                  {canMessage(helper) && (
+                    <div className="flex space-x-2 mt-2">
+                      <button
+                        onClick={() => handleMessage(helper)}
+                        className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md text-sm transition-colors"
+                      >
+                        Message
+                      </button>
+                    </div>
+                  )}
+
+                  {(isUserAuthor || isAuthor) && helper.status === 'pending' && (
                     <div className="flex space-x-2 mt-2">
                       <button
                         onClick={async () => {
@@ -214,14 +229,6 @@ const HelpPostCard = ({
                       >
                         {actioningHelperId === helper._id ? 'Accepting…' : 'Accept'}
                       </button>
-                      {canMessage() && (
-                      <button
-                      onClick={handleMessage}
-                      className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-md transition-colors"
-                       >
-                       Message
-                       </button>
-  )}
                       <button
                         onClick={async () => {
                           setActioningHelperId(helper._id);

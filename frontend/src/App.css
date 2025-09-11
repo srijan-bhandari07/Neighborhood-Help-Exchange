@@ -85,3 +85,45 @@ button:active {
 .status-completed {
   @apply bg-gray-100 text-gray-800;
 }
+
+/* Add to your App.css or create a new CSS file */
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.notification-panel {
+  max-height: 400px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+.notification-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notification-panel::-webkit-scrollbar-track {
+  background: #f7fafc;
+}
+
+.notification-panel::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 3px;
+}
+
+.notification-item.unread {
+  background-color: #eff6ff;
+  border-left: 3px solid #3b82f6;
+}
