@@ -9,7 +9,7 @@ const {
   rejectHelpOffer,
   updateHelpPostStatus,
   deleteHelpPost,
-  updateHelpPost // Add this if you need it
+  updateHelpPost // Make sure this is exported from your controller
 } = require('../controllers/helpPostController');
 const authMiddleware = require('../middleware/authMiddleware');
 
@@ -61,13 +61,14 @@ router.put('/:id/status', authMiddleware, [
 // @route   PUT /api/help/:id
 // @desc    Update help post
 // @access  Private
+// FIXED: Use updateHelpPost instead of updateHelpPostStatus
 router.put('/:id', authMiddleware, [
   body('title').trim().isLength({ min: 1 }).withMessage('Title is required'),
   body('description').trim().isLength({ min: 1 }).withMessage('Description is required'),
   body('category').isIn(['Shopping', 'Transport', 'Study Help', 'Food Delivery', 'Ride Share', 'Book Exchange', 'Project Help', 'Other']).withMessage('Invalid category'),
   body('location').trim().isLength({ min: 1 }).withMessage('Location is required'),
   body('neededBy').isISO8601().withMessage('Valid needed by date is required')
-], updateHelpPostStatus); // or create a separate updateHelpPost function
+], updateHelpPost); // Changed from updateHelpPostStatus to updateHelpPost
 
 // @route   DELETE /api/help/:id
 // @desc    Delete help post

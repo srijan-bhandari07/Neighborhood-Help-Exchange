@@ -39,29 +39,28 @@ const TaskList = () => {
   };
 
   const handleAcceptHelp = async (postId, helperId) => {
-  try {
-    const res = await axios.put(`/api/help/${postId}/helpers/${helperId}/accept`);
-    setPosts(prev =>
-      prev.map(p => (p._id === postId ? res.data : p))
-    );
-  } catch (err) {
-    console.error('Error accepting help:', err);
-    alert(err.response?.data?.message || 'Failed to accept help');
-  }
-};
+    try {
+      const res = await axios.put(`/api/help/${postId}/helpers/${helperId}/accept`);
+      setPosts(prev =>
+        prev.map(p => (p._id === postId ? res.data : p))
+      );
+    } catch (err) {
+      console.error('Error accepting help:', err);
+      alert(err.response?.data?.message || 'Failed to accept help');
+    }
+  };
 
-const handleRejectHelp = async (postId, helperId) => {
-  try {
-    const res = await axios.put(`/api/help/${postId}/helpers/${helperId}/reject`);
-    setPosts(prev =>
-      prev.map(p => (p._id === postId ? res.data : p))
-    );
-  } catch (err) {
-    console.error('Error rejecting help:', err);
-    alert(err.response?.data?.message || 'Failed to reject help');
-  }
-};
-
+  const handleRejectHelp = async (postId, helperId) => {
+    try {
+      const res = await axios.put(`/api/help/${postId}/helpers/${helperId}/reject`);
+      setPosts(prev =>
+        prev.map(p => (p._id === postId ? res.data : p))
+      );
+    } catch (err) {
+      console.error('Error rejecting help:', err);
+      alert(err.response?.data?.message || 'Failed to reject help');
+    }
+  };
 
   const handleDeletePost = async (postId) => {
     try {
@@ -73,22 +72,26 @@ const handleRejectHelp = async (postId, helperId) => {
     }
   };
 
-  const handleUpdatePost = async (postId, updatedData) => {
+  const handleUpdatePost = async (updatedData) => {
     if (!editingPost) return { success: false, message: 'No post being edited' };
   
-  try {
-    const response = await axios.put(`/api/help/${editingPost._id}`, updatedData);
-    setPosts(posts.map(post => post._id === editingPost._id ? response.data : post));
+    try {
+      const response = await axios.put(`/api/help/${editingPost._id}`, updatedData);
+      setPosts(posts.map(post => post._id === editingPost._id ? response.data : post));
+      setEditingPost(null);
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating post:', error);
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Failed to update post' 
+      };
+    }
+  };
+
+  const handleCancelEdit = () => {
     setEditingPost(null);
-    return { success: true };
-  } catch (error) {
-    console.error('Error updating post:', error);
-    return { 
-      success: false, 
-      message: error.response?.data?.message || 'Failed to update post' 
-    };
-  }
-};
+  };
 
   if (loading) {
     return (
@@ -115,12 +118,21 @@ const handleRejectHelp = async (postId, helperId) => {
 
       {editingPost && (
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4">Edit Post</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Edit Post</h3>
+            <button
+              onClick={handleCancelEdit}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
           <HelpPostForm 
-            key={editingPost._id}
             post={editingPost}
             onSubmit={handleUpdatePost}
-            onCancel={() => setEditingPost(null)}
+            onCancel={handleCancelEdit}
           />
         </div>
       )}

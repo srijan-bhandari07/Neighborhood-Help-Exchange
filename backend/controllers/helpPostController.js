@@ -1,5 +1,6 @@
 const { validationResult } = require('express-validator');
 const HelpPost = require('../models/HelpPost');
+const Conversation = require('../models/Conversation');
 
 // Create Help Post
 const createHelpPost = async (req, res) => {
@@ -122,8 +123,8 @@ const offerHelp = async (req, res) => {
 // Accept Help Offer
 const acceptHelpOffer = async (req, res) => {
   try {
-    console.log('User making request:', req.user); // Debug log
-    console.log('Params:', req.params); // Debug log
+    console.log('User making request:', req.user);
+    console.log('Params:', req.params);
 
     const { id, helperId } = req.params;
 
@@ -146,6 +147,20 @@ const acceptHelpOffer = async (req, res) => {
     helper.status = 'accepted';
     helpPost.status = 'in-progress';
     await helpPost.save();
+
+    // Create a conversation between the author and the helper
+    try {
+      const conversation = new Conversation({
+        participants: [helpPost.author, helper.user],
+        helpPost: helpPost._id
+      });
+      await conversation.save();
+    } catch (error) {
+      // If conversation already exists, that's fine
+      if (error.code !== 11000) {
+        console.error('Error creating conversation:', error);
+      }
+    }
 
     await helpPost.populate('author', 'username email studentId');
     await helpPost.populate('helpers.user', 'username email studentId');
@@ -228,6 +243,45 @@ const updateHelpPostStatus = async (req, res) => {
   }
 };
 
+// Update Help Post
+const updateHelpPost = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { id } = req.params;
+    const { title, description, category, location, neededBy } = req.body;
+
+    const helpPost = await HelpPost.findById(id);
+    if (!helpPost) {
+      return res.status(404).json({ message: 'Help post not found' });
+    }
+
+    // Check if user is the author
+    if (helpPost.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this post' });
+    }
+
+    // Update the post fields
+    helpPost.title = title;
+    helpPost.description = description;
+    helpPost.category = category;
+    helpPost.location = location;
+    helpPost.neededBy = neededBy;
+
+    await helpPost.save();
+    await helpPost.populate('author', 'username email studentId');
+    await helpPost.populate('helpers.user', 'username email studentId');
+
+    res.json(helpPost);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // Delete Help Post
 const deleteHelpPost = async (req, res) => {
   try {
@@ -249,10 +303,7 @@ const deleteHelpPost = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
-
 };
-
-
 
 module.exports = {
   createHelpPost,
@@ -261,6 +312,7 @@ module.exports = {
   offerHelp,
   acceptHelpOffer,
   rejectHelpOffer,
-  updateHelpPostStatus,
+  updateHelpPostStatus, 
+  updateHelpPost, 
   deleteHelpPost
 };

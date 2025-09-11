@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import HelpPostCard from './HelpPostCard';
+import HelpPostCard from '../components/HelpPostCard';
 import { useParams } from 'react-router-dom';
 
 const Profile = () => {

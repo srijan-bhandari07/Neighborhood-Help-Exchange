@@ -48,6 +48,26 @@ const HelpPostCard = ({
       minute: '2-digit'
     });
   };
+  const canMessage = () => {
+    if (!user || !post) return false;
+    
+    // Check if user is author and there are accepted helpers
+    const isUserAuthor = String(post.author._id) === String(user._id || user.id);
+    if (isUserAuthor) {
+      return post.helpers.some(helper => helper.status === 'accepted');
+    }
+    
+    // Check if user is an accepted helper
+    return post.helpers.some(helper => 
+      (String(helper.user._id) === String(user._id || user.id)) && 
+      helper.status === 'accepted'
+    );
+  };
+
+  // Add this function to handle messaging
+  const handleMessage = () => {
+    navigate('/messages');
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -194,6 +214,14 @@ const HelpPostCard = ({
                       >
                         {actioningHelperId === helper._id ? 'Accepting…' : 'Accept'}
                       </button>
+                      {canMessage() && (
+                      <button
+                      onClick={handleMessage}
+                      className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-md transition-colors"
+                       >
+                       Message
+                       </button>
+  )}
                       <button
                         onClick={async () => {
                           setActioningHelperId(helper._id);
