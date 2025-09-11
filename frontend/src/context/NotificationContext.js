@@ -1,7 +1,8 @@
+// context/NotificationContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useSocket } from './SocketContext';
 import { useAuth } from './AuthContext';
-import axios from 'axios';
+import api from '../utils/api'; // Import your axios instance
 
 const NotificationContext = createContext();
 
@@ -33,23 +34,21 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    // New message notification
     const handleNewMessageNotification = (data) => {
       addNotification({
         _id: `msg-${Date.now()}`,
         type: 'new_message',
         title: 'New Message',
-        message: `New message from ${data.message.sender.username}`,
+        message: `New message from ${data.message.sender?.username || 'Someone'}`,
         relatedEntity: {
           entityType: 'Conversation',
-          entityId: data.conversation._id
+          entityId: data.conversation?._id
         },
         createdAt: new Date(),
         read: false
       });
     };
 
-    // Help post notifications
     const handleHelpPostNotification = (data) => {
       let title = '';
       let message = '';
@@ -57,19 +56,19 @@ export const NotificationProvider = ({ children }) => {
       switch (data.type) {
         case 'help_offered':
           title = 'Help Offered';
-          message = `Someone offered help on your post: ${data.helpPost.title}`;
+          message = `Someone offered help on your post: ${data.helpPost?.title || 'Unknown post'}`;
           break;
         case 'help_accepted':
           title = 'Help Accepted';
-          message = `Your help offer was accepted: ${data.helpPost.title}`;
+          message = `Your help offer was accepted: ${data.helpPost?.title || 'Unknown post'}`;
           break;
         case 'help_rejected':
           title = 'Help Rejected';
-          message = `Your help offer was rejected: ${data.helpPost.title}`;
+          message = `Your help offer was rejected: ${data.helpPost?.title || 'Unknown post'}`;
           break;
         case 'status_changed':
           title = 'Status Updated';
-          message = `Help request status changed: ${data.helpPost.title}`;
+          message = `Help request status changed: ${data.helpPost?.title || 'Unknown post'}`;
           break;
         default:
           title = 'Help Post Update';
@@ -83,14 +82,13 @@ export const NotificationProvider = ({ children }) => {
         message,
         relatedEntity: {
           entityType: 'HelpPost',
-          entityId: data.helpPost._id
+          entityId: data.helpPost?._id
         },
         createdAt: new Date(),
         read: false
       });
     };
 
-    // System notifications
     const handleSystemNotification = (data) => {
       addNotification({
         _id: `sys-${Date.now()}`,
@@ -116,11 +114,22 @@ export const NotificationProvider = ({ children }) => {
   const fetchNotifications = async (page = 1, limit = 20) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/notifications?page=${page}&limit=${limit}`);
-      setNotifications(response.data.notifications);
+      setError('');
+      const response = await api.get(`/notifications?page=${page}&limit=${limit}`);
+      
+      // Check the response structure
+      console.log('Notifications API response:', response.data);
+      
+      // Adjust based on your actual API response structure
+      if (response.data.success) {
+        setNotifications(response.data.data?.notifications || response.data.notifications || []);
+      } else {
+        setNotifications([]);
+      }
     } catch (error) {
       console.error('Error fetching notifications:', error);
       setError('Failed to load notifications');
+      setNotifications([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -128,11 +137,16 @@ export const NotificationProvider = ({ children }) => {
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await axios.get('/api/notifications/unread/count'); // Updated endpoint
-      setUnreadCount(response.data.count);
+      const response = await api.get('/notifications/unread/count');
+      console.log('Unread count response:', response.data);
+      
+      if (response.data.success) {
+        setUnreadCount(response.data.data?.count || response.data.count || 0);
+      } else {
+        setUnreadCount(0);
+      }
     } catch (error) {
       console.error('Error fetching unread count:', error);
-      // Set to 0 if endpoint doesn't exist yet
       setUnreadCount(0);
     }
   };
@@ -144,7 +158,7 @@ export const NotificationProvider = ({ children }) => {
 
   const markAsRead = async (notificationId) => {
     try {
-      await axios.put(`/api/notifications/${notificationId}/read`);
+      await api.put(`/notifications/${notificationId}/read`);
       setNotifications(prev =>
         prev.map(notif =>
           notif._id === notificationId ? { ...notif, read: true, readAt: new Date() } : notif
@@ -158,7 +172,7 @@ export const NotificationProvider = ({ children }) => {
 
   const markAllAsRead = async () => {
     try {
-      await axios.put('/api/notifications/read/all'); // Updated endpoint
+      await api.put('/notifications/read/all');
       setNotifications(prev =>
         prev.map(notif => ({ ...notif, read: true, readAt: new Date() }))
       );

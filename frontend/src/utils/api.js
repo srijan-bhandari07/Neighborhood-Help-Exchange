@@ -1,17 +1,20 @@
-
+// api.js (or wherever your axios instance is)
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'http://localhost:5001',
-    withCredentials: true,
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  });
+  baseURL: 'http://localhost:5001/api', // Add /api here
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
 
-// Request interceptor
+// Request interceptor to add auth token
 api.interceptors.request.use(config => {
-  // You can add auth tokens here if needed
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 }, error => {
   return Promise.reject(error);
@@ -19,9 +22,10 @@ api.interceptors.request.use(config => {
 
 // Response interceptor
 api.interceptors.response.use(response => response, error => {
-  if (error.response?.status === 403) {
-    // Handle forbidden errors
-    console.error('Forbidden request - check CORS configuration');
+  if (error.response?.status === 401) {
+    // Handle unauthorized - redirect to login
+    localStorage.removeItem('token');
+    window.location.href = '/login';
   }
   return Promise.reject(error);
 });

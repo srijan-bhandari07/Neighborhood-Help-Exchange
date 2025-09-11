@@ -109,6 +109,11 @@ const offerHelp = async (req, res) => {
       status: 'pending'
     });
 
+    if (req.app.get('notificationService')) {
+      const notificationService = req.app.get('notificationService');
+      notificationService.notifyHelpOffered(helpPost, req.user);
+    }
+
     const updatedPost = await helpPostRepository.findByIdAndPopulate(id);
 
     res.json(updatedPost);
