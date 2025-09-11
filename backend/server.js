@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const http = require('http');
@@ -11,17 +12,11 @@ const helpPostRoutes = require('./routes/helpPostRoutes');
 const userRoutes = require('./routes/userRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const taskRoutes = require('./routes/taskRoutes');
-
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Import socket setup
 const setupMessagingSocket = require('./socket/messaging');
-
-const notificationRoutes = require('./routes/notificationRoutes'); // New route
-
-// Import services
 const NotificationService = require('./services/NotificationService');
-
-// Import Database Singleton
 const Database = require('./patterns/DatabaseSingleton');
 
 class Server {
@@ -37,7 +32,17 @@ class Server {
   }
 
   setupMiddleware() {
-    this.app.use(cors());
+    // Configure CORS properly
+    this.app.use(cors({
+      origin: process.env.CLIENT_URL || "http://localhost:3000",
+      credentials: true, // Allow credentials (cookies, authorization headers)
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    }));
+
+    // Handle preflight requests
+    this.app.options('*', cors());
+
     this.app.use(express.json());
   }
 
@@ -46,10 +51,8 @@ class Server {
     this.app.use('/api/help', helpPostRoutes);
     this.app.use('/api/users', userRoutes);
     this.app.use('/api/messages', messageRoutes);
-    this.app.use('api/task', taskRoutes);
+    this.app.use('/api/task', taskRoutes);
     this.app.use('/api/notifications', notificationRoutes);
-    
-   
   }
 
   setupDatabase() {
@@ -62,22 +65,18 @@ class Server {
     this.io = socketIo(this.server, {
       cors: {
         origin: process.env.CLIENT_URL || "http://localhost:3000",
-        methods: ["GET", "POST"]
+        methods: ["GET", "POST"],
+        credentials: true
       }
     });
     
     this.notificationService = new NotificationService(this.io);
+    this.app.set('notificationService', this.notificationService);
     
-    // Setup messaging socket with notification service
-    require('./socket/messaging')(this.io, this.notificationService);
+    setupMessagingSocket(this.io, this.notificationService);
     
     console.log('Notification service initialized with', this.notificationService.getObserverCount(), 'observers');
-
-    setupMessagingSocket(this.io);
-    
   }
-
-  
 
   start(port = process.env.PORT || 5001) {
     this.server.listen(port, () => {
@@ -86,17 +85,8 @@ class Server {
     
     return this.server;
   }
-
-  getApp() {
-    return this.app;
-  }
-
-  getIO() {
-    return this.io;
-  }
 }
 
-// Create and start the server
 const server = new Server();
 server.start();
 

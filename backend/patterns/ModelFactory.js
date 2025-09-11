@@ -20,7 +20,7 @@ class ModelFactory {
         return new Message(data);
       case 'Task':
         return new Task(data);
-        case 'Notification': // Add this case
+        case 'notifications' :
         return new Notification(data);
       default:
         throw new Error(`Unknown model type: ${modelType}`);
@@ -40,7 +40,7 @@ class ModelFactory {
         return Message;
       case 'Task':
         return Task;
-        case 'Notification': // Add this case
+        case 'notifications': // Add this case
         return Notification;
       default:
         throw new Error(`Unknown model type: ${modelType}`);

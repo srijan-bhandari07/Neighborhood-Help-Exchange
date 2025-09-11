@@ -1,77 +1,63 @@
 // routes/notificationRoutes.js
 const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
-const NotificationRepository = require('../repositories/NotificationRepository');
+const NotificationController = require('../controllers/notificationController');
 
 const router = express.Router();
+const notificationController = new NotificationController();
 
 // @route   GET /api/notifications
-// @desc    Get user notifications
+// @desc    Get user notifications with pagination
 // @access  Private
-router.get('/', authMiddleware, async (req, res) => {
-  try {
-    const { page = 1, limit = 20 } = req.query;
-    const notificationRepository = new NotificationRepository();
-    
-    const result = await notificationRepository.getUserNotifications(
-      req.user._id, 
-      parseInt(limit), 
-      parseInt(page)
-    );
-    
-    res.json(result);
-  } catch (error) {
-    console.error('Error getting notifications:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+router.get('/', authMiddleware, notificationController.getUserNotifications.bind(notificationController));
 
 // @route   GET /api/notifications/unread/count
 // @desc    Get unread notifications count
 // @access  Private
-router.get('/unread/count', authMiddleware, async (req, res) => {
+router.get('/unread/count', authMiddleware, notificationController.getUnreadCount.bind(notificationController));
+
+// @route   GET /api/notifications/recent
+// @desc    Get recent notifications
+// @access  Private
+router.get('/recent', authMiddleware, notificationController.getRecentNotifications.bind(notificationController));
+
+// @route   GET /api/notifications/stats
+// @desc    Get notification statistics
+// @access  Private
+router.get('/stats', authMiddleware, async (req, res) => {
   try {
     const notificationRepository = new NotificationRepository();
-    const count = await notificationRepository.getUnreadCount(req.user._id);
-    
-    res.json({ count });
+    const stats = await notificationRepository.getNotificationStats(req.user._id);
+    res.json({ success: true, data: stats });
   } catch (error) {
-    console.error('Error getting unread count:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error getting notification stats:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+
+// @route   GET /api/notifications/type/:type
+// @desc    Get notifications by type
+// @access  Private
+router.get('/type/:type', authMiddleware, notificationController.getNotificationsByType.bind(notificationController));
 
 // @route   PUT /api/notifications/:id/read
 // @desc    Mark notification as read
 // @access  Private
-router.put('/:id/read', authMiddleware, async (req, res) => {
-  try {
-    const notificationRepository = new NotificationRepository();
-    const notification = await notificationRepository.markAsRead(
-      req.params.id, 
-      req.user._id
-    );
-    
-    res.json(notification);
-  } catch (error) {
-    console.error('Error marking notification as read:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+router.put('/:id/read', authMiddleware, notificationController.markAsRead.bind(notificationController));
 
 // @route   PUT /api/notifications/read/all
 // @desc    Mark all notifications as read
 // @access  Private
-router.put('/read/all', authMiddleware, async (req, res) => {
-  try {
-    const notificationRepository = new NotificationRepository();
-    const result = await notificationRepository.markAllAsRead(req.user._id);
-    
-    res.json({ message: 'All notifications marked as read', updatedCount: result.modifiedCount });
-  } catch (error) {
-    console.error('Error marking all notifications as read:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+router.put('/read/all', authMiddleware, notificationController.markAllAsRead.bind(notificationController));
+
+// @route   DELETE /api/notifications/:id
+// @desc    Delete a notification
+// @access  Private
+router.delete('/:id', authMiddleware, notificationController.deleteNotification.bind(notificationController));
+
+// @route   DELETE /api/notifications
+// @desc    Clear all notifications
+// @access  Private
+router.delete('/', authMiddleware, notificationController.clearAllNotifications.bind(notificationController));
 
 module.exports = router;

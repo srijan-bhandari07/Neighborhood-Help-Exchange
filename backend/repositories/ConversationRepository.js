@@ -195,6 +195,46 @@ async updateLastMessage(conversationId, messageId) {
     }
   }
 
+    /**
+   * Find conversation by ID with optional population
+   */
+
+  async findById(id, populateFields = []) {
+    try {
+      let query = this.model.findById(id);
+      
+      // Apply population if specified
+      if (populateFields.length > 0) {
+        populateFields.forEach(field => {
+          query = query.populate(field);
+        });
+      }
+      
+      return await query.exec();
+    } catch (error) {
+      throw new Error(`Error finding conversation by ID: ${error.message}`);
+    }
+  }
+
+  /**
+   * Find conversation by ID with full population
+   */
+  async findByIdAndPopulate(id) {
+    try {
+      return await this.model.findById(id)
+        .populate('participants', 'username email studentId')
+        .populate({
+          path: 'helpPost',
+          model: ModelFactory.getModel('helpposts'),
+          select: 'title'
+        })
+        .populate('lastMessage')
+        .exec();
+    } catch (error) {
+      throw new Error(`Error finding conversation by ID with populate: ${error.message}`);
+    }
+  }
+
   /**
    * Remove a participant from a conversation
    * @param {string} conversationId - The conversation ID

@@ -7,16 +7,21 @@ const NotificationPanel = ({ onClose }) => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
+  // Safe access to notifications array
+  const safeNotifications = notifications || [];
+  const notificationsLength = safeNotifications.length;
+
   const loadMore = async () => {
     const nextPage = page + 1;
     const response = await fetchNotifications(nextPage);
-    if (response?.notifications.length === 0) {
+    if (response?.notifications?.length === 0) {
       setHasMore(false);
     }
     setPage(nextPage);
   };
 
-  if (loading && notifications.length === 0) {
+  // Show loading state only when loading and no notifications yet
+  if (loading && notificationsLength === 0) {
     return (
       <div className="p-4">
         <div className="flex justify-between items-center mb-4">
@@ -52,7 +57,7 @@ const NotificationPanel = ({ onClose }) => {
       )}
 
       <div className="flex-1 overflow-y-auto">
-        {notifications.length === 0 ? (
+        {notificationsLength === 0 ? (
           <div className="p-8 text-center">
             <div className="text-gray-500 mb-2">No notifications yet</div>
             <p className="text-gray-400 text-sm">
@@ -61,7 +66,7 @@ const NotificationPanel = ({ onClose }) => {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {notifications.map((notification) => (
+            {safeNotifications.map((notification) => (
               <NotificationItem
                 key={notification._id}
                 notification={notification}
@@ -72,7 +77,7 @@ const NotificationPanel = ({ onClose }) => {
         )}
       </div>
 
-      {hasMore && notifications.length > 0 && (
+      {hasMore && notificationsLength > 0 && (
         <div className="p-4 border-t border-gray-200">
           <button
             onClick={loadMore}

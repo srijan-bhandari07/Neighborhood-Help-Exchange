@@ -2,14 +2,9 @@
 const MessageRepository = require('../repositories/MessageRepository');
 const ConversationRepository = require('../repositories/ConversationRepository');
 const SocketAdapter = require('../patterns/SocketAdapter');
-const { NotificationSubject, MessageNotificationObserver } = require('../patterns/NotificationObserver');
 
-const setupMessagingSocket = (io) => {
+const setupMessagingSocket = (io, notificationService) => {
   const socketAdapter = new SocketAdapter(io);
-  const notificationSubject = new NotificationSubject();
-  const messageObserver = new MessageNotificationObserver();
-  
-  notificationSubject.addObserver(messageObserver);
 
   io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
@@ -27,7 +22,6 @@ const setupMessagingSocket = (io) => {
     });
 
     // Handle new message
-    // Handle new message
     socket.on('send_message', async (data) => {
       try {
         const { conversationId, content, senderId } = data;
@@ -44,9 +38,15 @@ const setupMessagingSocket = (io) => {
         // Update conversation's last message and activity
         const conversation = await conversationRepository.updateLastMessage(conversationId, message._id);
 
-        // Notify about new message
+        // Notify about new message using NotificationService
         if (notificationService && conversation) {
-          notificationService.notifyNewMessage(message, conversation);
+          // First get the populated conversation
+          const populatedConversation = await conversationRepository.findById(conversationId);
+          if (populatedConversation) {
+            // Then populate the participants
+            await populatedConversation.populate('participants', 'username email studentId');
+            notificationService.notifyNewMessage(message, populatedConversation);
+          }
         }
 
         // Emit to all users in the conversation
