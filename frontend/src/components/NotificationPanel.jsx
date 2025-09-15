@@ -3,6 +3,7 @@ import { useNotifications } from '../context/NotificationContext';
 import NotificationItem from './NotificationItem';
 
 const NotificationPanel = ({ onClose }) => {
+  
   const { notifications, loading, error, fetchNotifications } = useNotifications();
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);

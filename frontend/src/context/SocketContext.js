@@ -1,6 +1,7 @@
+// context/SocketContext.js
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
-import io from 'socket.io-client';
 
 const SocketContext = createContext();
 
@@ -15,51 +16,39 @@ export const useSocket = () => {
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
-  const { user, token } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (user && token) {
-      try {
-        const newSocket = io(process.env.REACT_APP_API_URL || 'http://localhost:5001', {
-          auth: {
-            token: token
-          },
-          transports: ['websocket', 'polling']
-        });
+    if (user) {
+      const newSocket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5001', {
+        withCredentials: true,
+        auth: {
+          token: user.token
+        }
+      });
 
-        newSocket.on('connect', () => {
-          console.log('Socket connected');
-          setIsConnected(true);
-        });
+      newSocket.on('connect', () => {
+        console.log('Connected to server');
+        setIsConnected(true);
+      });
 
-        newSocket.on('disconnect', () => {
-          console.log('Socket disconnected');
-          setIsConnected(false);
-        });
-
-        newSocket.on('connect_error', (error) => {
-          console.error('Socket connection error:', error);
-          setIsConnected(false);
-        });
-
-        setSocket(newSocket);
-
-        return () => {
-          if (newSocket) {
-            newSocket.disconnect();
-          }
-        };
-      } catch (error) {
-        console.error('Error creating socket connection:', error);
-      }
-    } else {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
+      newSocket.on('disconnect', () => {
+        console.log('Disconnected from server');
         setIsConnected(false);
-      }
+      });
+
+      newSocket.on('connect_error', (error) => {
+        console.error('Connection error:', error);
+        setIsConnected(false);
+      });
+
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.close();
+      };
     }
-  }, [user, token]);
+  }, [user]);
 
   const value = {
     socket,
