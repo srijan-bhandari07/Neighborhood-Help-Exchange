@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import MessagesPage from './pages/MessagesPage';
 import Profile from './pages/Profile';
 import PrivateRoute from './components/PrivateRoute';
+
 import './App.css';
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </div>
+            
             </div>
           </Router>
         </NotificationProvider>

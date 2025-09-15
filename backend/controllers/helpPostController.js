@@ -27,6 +27,11 @@ const createHelpPost = async (req, res) => {
       neededBy,
       author: req.user._id
     });
+    const io = req.app.get('io');
+    if (io) {
+      const populatedPost = await helpPostRepository.findByIdAndPopulate(helpPost._id);
+      io.emit('new_help_post', populatedPost);
+    }
 
     await helpPost.populate('author', 'username email studentId');
 
@@ -270,6 +275,11 @@ const updateHelpPost = async (req, res) => {
       neededBy
     });
 
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('updated_help_post', updatedPost);
+    }
+
     res.json(updatedPost);
   } catch (error) {
     console.error(error);
@@ -294,6 +304,10 @@ const deleteHelpPost = async (req, res) => {
     }
 
     await helpPostRepository.delete(id);
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('deleted_help_post', req.params.id);
+    }
     res.json({ message: 'Help post deleted successfully' });
   } catch (error) {
     console.error(error);

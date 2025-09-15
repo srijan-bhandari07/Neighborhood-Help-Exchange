@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import HelpPostCard from './HelpPostCard';
+import { usePollingHelpPosts } from '../hooks/usePollingHelpPosts';
 
 const HelpPostList = () => {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [filters, setFilters] = useState({
     category: '',
     status: 'open'
   });
+
+  const { posts, loading, error, updatePost, removePost } = usePollingHelpPosts(filters, 5000);
 
   const categories = [
     'All Categories',
@@ -23,38 +23,10 @@ const HelpPostList = () => {
     'Other'
   ];
 
-  useEffect(() => {
-    fetchPosts();
-  }, [filters]);
-
-
-  const fetchPosts = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      if (filters.category && filters.category !== 'All Categories') {
-        params.append('category', filters.category);
-      }
-      if (filters.status) {
-        params.append('status', filters.status);
-      }
-
-      const response = await axios.get(`/api/help?${params.toString()}`);
-      setPosts(response.data.helpPosts || []);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      setError('Failed to load help posts');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleOfferHelp = async (postId, message = '') => {
     try {
       const response = await axios.post(`/api/help/${postId}/offer-help`, { message });
-      setPosts(posts.map(post => 
-        post._id === postId ? response.data : post
-      ));
+      updatePost(postId, response.data);
       return { success: true };
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Failed to offer help';
@@ -66,9 +38,7 @@ const HelpPostList = () => {
   const handleAcceptHelp = async (postId, helperId) => {
     try {
       const response = await axios.put(`/api/help/${postId}/helpers/${helperId}/accept`);
-      setPosts(posts.map(post => 
-        post._id === postId ? response.data : post
-      ));
+      updatePost(postId, response.data);
       return { success: true };
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Failed to accept help offer';
@@ -80,9 +50,7 @@ const HelpPostList = () => {
   const handleRejectHelp = async (postId, helperId) => {
     try {
       const response = await axios.put(`/api/help/${postId}/helpers/${helperId}/reject`);
-      setPosts(posts.map(post => 
-        post._id === postId ? response.data : post
-      ));
+      updatePost(postId, response.data);
       return { success: true };
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Failed to reject help offer';
@@ -94,9 +62,7 @@ const HelpPostList = () => {
   const handleUpdateStatus = async (postId, status) => {
     try {
       const response = await axios.put(`/api/help/${postId}/status`, { status });
-      setPosts(posts.map(post => 
-        post._id === postId ? response.data : post
-      ));
+      updatePost(postId, response.data);
       return { success: true };
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Failed to update status';
@@ -108,7 +74,7 @@ const HelpPostList = () => {
   const handleDeletePost = async (postId) => {
     try {
       await axios.delete(`/api/help/${postId}`);
-      setPosts(posts.filter(post => post._id !== postId));
+      removePost(postId);
       return { success: true };
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Failed to delete post';

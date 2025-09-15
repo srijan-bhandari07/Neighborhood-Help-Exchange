@@ -47,6 +47,11 @@ class Server {
   }
 
   setupRoutes() {
+    this.app.use((req, res, next) => {
+      req.io = this.io;
+      next();
+    });
+
     this.app.use('/api/auth', authRoutes);
     this.app.use('/api/help', helpPostRoutes);
     this.app.use('/api/users', userRoutes);
