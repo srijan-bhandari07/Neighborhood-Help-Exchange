@@ -1,5 +1,4 @@
 // api.js
-//testing comment
 import axios from 'axios';
 
 const api = axios.create({
