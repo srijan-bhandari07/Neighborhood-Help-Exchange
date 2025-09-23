@@ -96,4 +96,4 @@ We will send you an email to choose a Real-World project. If you face any diffic
 ---
 
 * Branch created by Eunse(Elsie)
-* Branch created by Sean - test
+* Branch created by Sean
