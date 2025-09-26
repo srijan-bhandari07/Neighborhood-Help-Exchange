@@ -1,7 +1,41 @@
+/**
+ * HelpPost Controller
+ * 
+ * This controller demonstrates both traditional object creation and the new Builder pattern
+ * for creating HelpPost objects. The Builder pattern provides a more readable and flexible
+ * approach to constructing complex objects.
+ * 
+ * Builder Pattern Usage Examples:
+ * 
+ * // Simple HelpPost creation
+ * const helpPost = new HelpPostBuilder()
+ *   .setTitle("Need help with groceries")
+ *   .setDescription("Looking for someone to help carry groceries")
+ *   .setCategory("Shopping")
+ *   .setLocation("Campus Store")
+ *   .setNeededBy(new Date("2024-01-15"))
+ *   .setAuthor(userId)
+ *   .build();
+ * 
+ * // HelpPost with helpers
+ * const helpPostWithHelpers = new HelpPostBuilder()
+ *   .setTitle("Study group needed")
+ *   .setDescription("Looking for study partners for final exams")
+ *   .setCategory("Study Help")
+ *   .setLocation("Library")
+ *   .setNeededBy(new Date("2024-01-20"))
+ *   .setAuthor(userId)
+ *   .addHelper({ user: helper1Id, message: "I can help with math!" })
+ *   .addHelper({ user: helper2Id, message: "Count me in for physics" })
+ *   .setStatus("in-progress")
+ *   .build();
+ */
+
 const { validationResult } = require('express-validator');
 const HelpPostRepository = require('../repositories/HelpPostRepository');
 const ConversationRepository = require('../repositories/ConversationRepository');
 const { NotificationSubject, HelpPostNotificationObserver } = require('../patterns/NotificationObserver');
+const HelpPostBuilder = require('../patterns/builders/HelpPostBuilder');
 
 // Create notification subject
 const notificationSubject = new NotificationSubject();
@@ -19,14 +53,27 @@ const createHelpPost = async (req, res) => {
     const { title, description, category, location, neededBy } = req.body;
     const helpPostRepository = new HelpPostRepository();
 
-    const helpPost = await helpPostRepository.create({
-      title,
-      description,
-      category,
-      location,
-      neededBy,
-      author: req.user._id
-    });
+    // Option 1: Direct object creation (existing approach)
+    // const helpPost = await helpPostRepository.create({
+    //   title,
+    //   description,
+    //   category,
+    //   location,
+    //   neededBy,
+    //   author: req.user._id
+    // });
+
+    // Option 2: Builder pattern approach (new fluent interface)
+    const helpPostData = new HelpPostBuilder()
+      .setTitle(title)
+      .setDescription(description)
+      .setCategory(category)
+      .setLocation(location)
+      .setNeededBy(neededBy)
+      .setAuthor(req.user._id)
+      .build();
+
+    const helpPost = await helpPostRepository.create(helpPostData);
     const io = req.app.get('io');
     if (io) {
       const populatedPost = await helpPostRepository.findByIdAndPopulate(helpPost._id);
@@ -36,9 +83,9 @@ const createHelpPost = async (req, res) => {
     await helpPost.populate('author', 'username email studentId');
 
     // Notify observers
-    notificationSubject.notifyObservers({ 
-      helpPost, 
-      eventType: 'created' 
+    notificationSubject.notifyObservers({
+      helpPost,
+      eventType: 'created'
     });
 
     res.status(201).json(helpPost);
@@ -53,7 +100,7 @@ const getAllHelpPosts = async (req, res) => {
   try {
     const { category, status, page = 1, limit = 10 } = req.query;
     const helpPostRepository = new HelpPostRepository();
-    
+
     let filter = {};
     if (category) filter.category = category;
     if (status) filter.status = status;
@@ -154,7 +201,7 @@ const acceptHelpOffer = async (req, res) => {
 
     // Update helper status and post status
     await helpPostRepository.updateHelperStatus(id, helperId, 'accepted');
-    
+
     // Only set to in-progress if it's not already completed
     if (helpPost.status !== 'completed') {
       await helpPostRepository.update(id, { status: 'in-progress' });
@@ -322,7 +369,7 @@ module.exports = {
   offerHelp,
   acceptHelpOffer,
   rejectHelpOffer,
-  updateHelpPostStatus, 
-  updateHelpPost, 
+  updateHelpPostStatus,
+  updateHelpPost,
   deleteHelpPost
 };
