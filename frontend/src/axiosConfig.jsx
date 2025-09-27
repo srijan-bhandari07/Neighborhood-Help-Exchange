@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://16.176.13.146:5001/api',
+  baseURL: 'http://3.27.68.115:5001/api',
   //baseURL: 'http://localhost:5001/api',
   withCredentials: true, // This is important for sending cookies/auth headers
   headers: {
