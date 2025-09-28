@@ -35,7 +35,7 @@ const { validationResult } = require('express-validator');
 const HelpPostRepository = require('../repositories/HelpPostRepository');
 const ConversationRepository = require('../repositories/ConversationRepository');
 const { NotificationSubject, HelpPostNotificationObserver } = require('../patterns/NotificationObserver');
-const HelpPostBuilder = require('../patterns/builders/HelpPostBuilder');
+const HelpPostBuilder = require('../patterns/HelpPostBuilder');
 
 // Create notification subject
 const notificationSubject = new NotificationSubject();
