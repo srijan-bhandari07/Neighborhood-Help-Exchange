@@ -107,6 +107,7 @@ const getAllHelpPosts = async (req, res) => {
 
     const result = await helpPostRepository.getHelpPostsWithFilters(filter, page, limit);
 
+    res.status(200);
     res.json(result);
   } catch (error) {
     console.error(error);
