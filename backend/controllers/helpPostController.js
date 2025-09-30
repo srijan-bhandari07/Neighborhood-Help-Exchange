@@ -121,7 +121,8 @@ const getUserHelpPosts = async (req, res) => {
     const helpPostRepository = new HelpPostRepository();
     const helpPosts = await helpPostRepository.getUserHelpPosts(req.user._id);
 
-    res.json(helpPosts);
+    res.status(200).json(helpPosts);
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
