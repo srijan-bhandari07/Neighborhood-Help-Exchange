@@ -108,7 +108,7 @@ describe('Update markAsRead Notification Test', () => {
 });
 
 
-describe('NotificationController - markAllAsRead', () => {
+describe('Update markAllAsRead Notification Test', () => {
   let notificationController;
   let req, res, stub;
 

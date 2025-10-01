@@ -3,7 +3,7 @@ const chaiHttp = require('chai-http');
 const mongoose = require('mongoose');
 const HelpPost = require('../models/HelpPost');
 const sinon = require('sinon');
-const { createHelpPost, getUserHelpPosts, updateHelpPost, deleteHelpPost } = require('../controllers/helpPostController');
+const { createHelpPost, getUserHelpPosts, getAllHelpPosts, updateHelpPost, deleteHelpPost } = require('../controllers/helpPostController');
 const HelpPostRepository = require('../repositories/HelpPostRepository');
 
 
@@ -160,6 +160,68 @@ describe('Get HelpPost Test', () => {
   });
 });
 
+describe('Get All HelpPost Test', () => {
+  let req, res, sandbox;
+
+  beforeEach(() => {
+    sandbox = sinon.createSandbox();
+
+    req = {
+      query: {}
+    };
+
+    res = {
+      status: sandbox.stub().returnsThis(),
+      json: sandbox.spy()
+    };
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+  });
+
+  it('should return 200 and all help posts (no filters)', async () => {
+    const fakePosts = [{ title: 'Post 1' }, { title: 'Post 2' }];
+
+    sandbox.stub(HelpPostRepository.prototype, 'getHelpPostsWithFilters')
+      .resolves(fakePosts);
+
+    await getAllHelpPosts(req, res);
+
+    expect(res.status.calledWith(200)).to.be.true;
+    expect(res.json.calledWith(fakePosts)).to.be.true;
+  });
+
+  it('should call repository with category and status filters', async () => {
+    const fakePosts = [{ title: 'Filtered Post' }];
+
+    req.query = { category: 'Shopping', status: 'Open', page: 2, limit: 5 };
+
+    const repoStub = sandbox.stub(HelpPostRepository.prototype, 'getHelpPostsWithFilters')
+      .resolves(fakePosts);
+
+    await getAllHelpPosts(req, res);
+
+    expect(repoStub.calledWith(
+      { category: 'Shopping', status: 'Open' },
+      2,
+      5
+    )).to.be.true;
+
+    expect(res.status.calledWith(200)).to.be.true;
+    expect(res.json.calledWith(fakePosts)).to.be.true;
+  });
+
+  it('should return 500 if repository throws an error', async () => {
+    sandbox.stub(HelpPostRepository.prototype, 'getHelpPostsWithFilters')
+      .throws(new Error('DB error'));
+
+    await getAllHelpPosts(req, res);
+
+    expect(res.status.calledWith(500)).to.be.true;
+    expect(res.json.calledWithMatch({ message: 'Server error' })).to.be.true;
+  });
+});
 
 describe('Update HelpPost Test', () => {
   let req, res, sandbox;
@@ -237,9 +299,6 @@ describe('Update HelpPost Test', () => {
     expect(res.json.calledWithMatch({ message: 'Server error' })).to.be.true;
   });
 });
-
-
-
 
 describe('Delete HelpPost Test', () => {
   let req, res, sandbox;
