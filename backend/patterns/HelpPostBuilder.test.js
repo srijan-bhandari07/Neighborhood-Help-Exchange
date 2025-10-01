@@ -1,4 +1,4 @@
-const HelpPostBuilder = require('../../../patterns/builders/HelpPostBuilder');
+const HelpPostBuilder = require('../../../patterns/HelpPostBuilder');
 
 describe('HelpPostBuilder', () => {
   let builder;
