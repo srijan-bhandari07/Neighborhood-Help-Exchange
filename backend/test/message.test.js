@@ -9,7 +9,7 @@ const ConversationRepository = require('../repositories/ConversationRepository')
 
 const { expect } = chai;
 
-describe('sendMessage Function Test', () => {
+describe('Create Message Test', () => {
   let req, res, sandbox;
 
   beforeEach(() => {
@@ -83,7 +83,7 @@ describe('sendMessage Function Test', () => {
 
 
 
-describe('getConversation Function Test', () => {
+describe('Get Message Test', () => {
   let req, res, sandbox;
 
   beforeEach(() => {
@@ -146,7 +146,7 @@ describe('getConversation Function Test', () => {
 });
 
 
-describe('markAsRead Function Test', () => {
+describe('Update Message Test', () => {
   let req, res, sandbox;
 
   beforeEach(() => {
