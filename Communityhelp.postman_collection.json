@@ -1,0 +1,286 @@
+{
+	"info": {
+		"_postman_id": "7bee14ce-7fb0-44a3-9f27-bea3f66c7d54",
+		"name": "Communityhelp",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "27940444"
+	},
+	"item": [
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\":\"kevin@gmail.com\",\n    \"password\":\"kevin123\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5001/api/auth/login"
+			},
+			"response": []
+		},
+		{
+			"name": "Profile",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": {
+						"header": "",
+						"secret": "",
+						"algorithm": "HS256",
+						"isSecretBase64Encoded": false,
+						"payload": "{}",
+						"addTokenTo": "header",
+						"headerPrefix": "Bearer",
+						"queryParamKey": "token"
+					}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer{{eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMyYjMzMDVlY2Y0OTdmM2Y3ODkyMGUiLCJpYXQiOjE3NTgxODc2MzYsImV4cCI6MTc1ODc5MjQzNn0.d0fY0pQIfOLcAa4szIsydj5t-TB4csCedZikQs6c5XY}}",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"url": "http://localhost:5001/api/auth/profile"
+			},
+			"response": []
+		},
+		{
+			"name": "HelpPost",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMyYjMzMDVlY2Y0OTdmM2Y3ODkyMGUiLCJpYXQiOjE3NTgxODc2MzYsImV4cCI6MTc1ODc5MjQzNn0.d0fY0pQIfOLcAa4szIsydj5t-TB4csCedZikQs6c5XY"
+					}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMyYjMzMDVlY2Y0OTdmM2Y3ODkyMGUiLCJpYXQiOjE3NTgzNDAyNjIsImV4cCI6MTc1ODk0NTA2Mn0.LX8P5IBQ5JNduduC5zeUq2olJuCkS2ubkNRjn9VxcqQ",
+						"type": "text"
+					}
+				],
+				"url": "http://localhost:5001/api/help"
+			},
+			"response": []
+		},
+		{
+			"name": "New Request",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMyYjMzMDVlY2Y0OTdmM2Y3ODkyMGUiLCJpYXQiOjE3NTg4OTExMzEsImV4cCI6MTc1OTQ5NTkzMX0.hsYS3ndQ4cYeiY4w4JhV4lWKnOVEDJwgT4WthinvowQ"
+					}
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5001/api/help/?id=1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"api",
+						"help",
+						""
+					],
+					"query": [
+						{
+							"key": "id",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Post",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMyYjMzMDVlY2Y0OTdmM2Y3ODkyMGUiLCJpYXQiOjE3NTgxODc2MzYsImV4cCI6MTc1ODc5MjQzNn0.d0fY0pQIfOLcAa4szIsydj5t-TB4csCedZikQs6c5XY"
+					}
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n            \"_id\": \"68c79b0927d70f4279019cf0\",\n            \"title\": \"Shopping\",\n            \"description\": \"afas\",\n            \"category\": \"Shopping\",\n            \"location\": \"Banyo\",\n            \"neededBy\": \"2025-09-16T04:50:00.000Z\",\n            \"author\": {\n                \"_id\": \"68aba5d2195c1795d719424a\",\n                \"username\": \"srijan1\",\n                \"email\": \"srijanbhandari30@gmail.com\",\n                \"studentId\": \"1\"\n            },\n            \"status\": \"in-progress\"\n           \n                }\n        ",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5001/api/help"
+			},
+			"response": []
+		},
+		{
+			"name": "New Request",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMyYjMzMDVlY2Y0OTdmM2Y3ODkyMGUiLCJpYXQiOjE3NTkxMDQ3NDMsImV4cCI6MTc1OTcwOTU0M30.tDZMJZvYjx7umv_2NL8-Q1BrQe9jGq9orQ3YtIsx-qo"
+					}
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMyYjMzMDVlY2Y0OTdmM2Y3ODkyMGUiLCJpYXQiOjE3NTkxMDQ3NDMsImV4cCI6MTc1OTcwOTU0M30.tDZMJZvYjx7umv_2NL8-Q1BrQe9jGq9orQ3YtIsx-qo",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5001/api/help/68d68cf317dde2374d61cd1a\n"
+			},
+			"response": []
+		},
+		{
+			"name": "New Request",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMyYjMzMDVlY2Y0OTdmM2Y3ODkyMGUiLCJpYXQiOjE3NTgxODc2MzYsImV4cCI6MTc1ODc5MjQzNn0.d0fY0pQIfOLcAa4szIsydj5t-TB4csCedZikQs6c5XY"
+					}
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "",
+						"value": "",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:5001/api/help/delete/?id=68ce2b5f4db6688fab6f4bcb",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"api",
+						"help",
+						"delete",
+						""
+					],
+					"query": [
+						{
+							"key": "id",
+							"value": "68ce2b5f4db6688fab6f4bcb"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "accept offer",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMyYjMzMDVlY2Y0OTdmM2Y3ODkyMGUiLCJpYXQiOjE3NTkxMTY4MzcsImV4cCI6MTc1OTcyMTYzN30.fjvY-GsrQmx50t7vn7dWftrRXsBB7PB7pjUti8drXXQ"
+					}
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer <eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMyYjMzMDVlY2Y0OTdmM2Y3ODkyMGUiLCJpYXQiOjE3NTkxMTY4MzcsImV4cCI6MTc1OTcyMTYzN30.fjvY-GsrQmx50t7vn7dWftrRXsBB7PB7pjUti8drXXQ>",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"status\": \"completed\"\n}\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5001/api/help/68d68cf317dde2374d61cd1a"
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:5001/api/help/68d68cf317dde2374d61cd1a",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMyYjMzMDVlY2Y0OTdmM2Y3ODkyMGUiLCJpYXQiOjE3NTkxMTA4NTksImV4cCI6MTc1OTcxNTY1OX0.5JKKMfWygy7dm4u8ZAVcPchOqTUZcVS7y_QSlrXPVfA"
+					}
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer <eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMyYjMzMDVlY2Y0OTdmM2Y3ODkyMGUiLCJpYXQiOjE3NTkxMTA4NTksImV4cCI6MTc1OTcxNTY1OX0.5JKKMfWygy7dm4u8ZAVcPchOqTUZcVS7y_QSlrXPVfA>",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"Shopping in city (updated)\",\n  \"description\": \"Please grab groceries from Woolies this weekend.\",\n  \"category\": \"Shopping\",\n  \"location\": \"Banyo\",\n  \"neededBy\": \"2025-10-01T10:00:00.000Z\"\n}\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5001/api/help/68d68cf317dde2374d61cd1a"
+			},
+			"response": []
+		}
+	]
+}
