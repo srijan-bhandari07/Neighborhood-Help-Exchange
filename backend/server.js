@@ -66,6 +66,7 @@ class Server {
   }
 
   setupSocket() {
+    // HTTP server and socket.io for communication
     this.server = http.createServer(this.app);
     this.io = socketIo(this.server, {
       cors: {

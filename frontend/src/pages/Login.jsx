@@ -10,6 +10,7 @@ const Login = () => {
     username: '',
     studentId: ''
   });
+  // Error message, Loading state
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -78,6 +79,7 @@ const Login = () => {
           </div>
 
           <form className="p-6 space-y-6" onSubmit={handleSubmit}>
+            {/* Form error alert box */}
             {error && (
               <div className="bg-red-50 border-l-4 border-red-500 p-4">
                 <div className="flex">
@@ -94,6 +96,7 @@ const Login = () => {
             )}
 
             <div className="space-y-4">
+              {/* Form fields */}
               {!isLogin && (
                 <>
                   <div>
