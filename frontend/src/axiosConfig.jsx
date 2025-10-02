@@ -1,4 +1,4 @@
-// api.js
+// api.js - validation and axion config
 import axios from 'axios';
 
 const api = axios.create({
