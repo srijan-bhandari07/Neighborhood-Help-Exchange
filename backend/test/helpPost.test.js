@@ -253,6 +253,23 @@ describe('Update HelpPost Test', () => {
     sandbox.restore();
   });
 
+  it('should update and return post if authorized', async () => {
+    const fakePost = { author: req.user._id };
+    const updatedPost = { ...fakePost, title: 'Updated Title' };
+
+    sandbox.stub(HelpPostRepository.prototype, 'findById').resolves(fakePost);
+    const updateStub = sandbox.stub(HelpPostRepository.prototype, 'update').resolves(updatedPost);
+
+    await updateHelpPost(req, res);
+
+    expect(updateStub.calledOnceWith(req.params.id, sinon.match.object)).to.be.true;
+    expect(res.json.calledWith(updatedPost)).to.be.true;
+
+    // socket emit check
+    const io = req.app.get('io');
+    expect(io.emit.calledWith('updated_help_post', updatedPost)).to.be.true;
+  });
+
 
   it('should return 404 if post not found', async () => {
     sandbox.stub(HelpPostRepository.prototype, 'findById').resolves(null);
@@ -271,23 +288,6 @@ describe('Update HelpPost Test', () => {
 
     expect(res.status.calledWith(403)).to.be.true;
     expect(res.json.calledWithMatch({ message: 'Not authorized to update this post' })).to.be.true;
-  });
-
-  it('should update and return post if authorized', async () => {
-    const fakePost = { author: req.user._id };
-    const updatedPost = { ...fakePost, title: 'Updated Title' };
-
-    sandbox.stub(HelpPostRepository.prototype, 'findById').resolves(fakePost);
-    const updateStub = sandbox.stub(HelpPostRepository.prototype, 'update').resolves(updatedPost);
-
-    await updateHelpPost(req, res);
-
-    expect(updateStub.calledOnceWith(req.params.id, sinon.match.object)).to.be.true;
-    expect(res.json.calledWith(updatedPost)).to.be.true;
-
-    // socket emit check
-    const io = req.app.get('io');
-    expect(io.emit.calledWith('updated_help_post', updatedPost)).to.be.true;
   });
 
   it('should return 500 if repository throws', async () => {
@@ -322,6 +322,22 @@ describe('Delete HelpPost Test', () => {
     sandbox.restore();
   });
 
+  it('should delete post and return success if authorized', async () => {
+    const fakePost = { author: req.user._id };
+
+    sandbox.stub(HelpPostRepository.prototype, 'findById').resolves(fakePost);
+    const deleteStub = sandbox.stub(HelpPostRepository.prototype, 'delete').resolves();
+
+    await deleteHelpPost(req, res);
+
+    expect(deleteStub.calledOnceWith(req.params.id)).to.be.true;
+    expect(res.json.calledWithMatch({ message: 'Help post deleted successfully' })).to.be.true;
+
+    // socket emit check
+    const io = req.app.get('io');
+    expect(io.emit.calledWith('deleted_help_post', req.params.id)).to.be.true;
+  });
+
   it('should return 404 if post not found', async () => {
     sandbox.stub(HelpPostRepository.prototype, 'findById').resolves(null);
 
@@ -339,22 +355,6 @@ describe('Delete HelpPost Test', () => {
 
     expect(res.status.calledWith(403)).to.be.true;
     expect(res.json.calledWithMatch({ message: 'Not authorized to delete this post' })).to.be.true;
-  });
-
-  it('should delete post and return success if authorized', async () => {
-    const fakePost = { author: req.user._id };
-
-    sandbox.stub(HelpPostRepository.prototype, 'findById').resolves(fakePost);
-    const deleteStub = sandbox.stub(HelpPostRepository.prototype, 'delete').resolves();
-
-    await deleteHelpPost(req, res);
-
-    expect(deleteStub.calledOnceWith(req.params.id)).to.be.true;
-    expect(res.json.calledWithMatch({ message: 'Help post deleted successfully' })).to.be.true;
-
-    // socket emit check
-    const io = req.app.get('io');
-    expect(io.emit.calledWith('deleted_help_post', req.params.id)).to.be.true;
   });
 
   it('should return 500 if repository throws', async () => {
