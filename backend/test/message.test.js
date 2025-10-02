@@ -167,16 +167,7 @@ describe('Update Message Test', () => {
     sandbox.restore();
   });
 
-  it('should return 404 if conversation not found', async () => {
-    sandbox.stub(ConversationRepository.prototype, 'findConversation').resolves(null);
-
-    await markAsRead(req, res);
-
-    expect(res.status.calledWith(404)).to.be.true;
-    expect(res.json.calledWithMatch({ message: 'Conversation not found' })).to.be.true;
-  });
-
-  it('should mark messages as read and return success', async () => {
+    it('should mark messages as read and return success', async () => {
     sandbox.stub(ConversationRepository.prototype, 'findConversation').resolves({ _id: req.params.conversationId });
     const markStub = sandbox.stub(MessageRepository.prototype, 'markMessagesAsRead').resolves();
 
@@ -185,6 +176,15 @@ describe('Update Message Test', () => {
     expect(markStub.calledOnceWith(req.params.conversationId, req.user._id)).to.be.true;
     expect(res.json.calledWith({ message: 'Messages marked as read' })).to.be.true;
     expect(res.status.called).to.be.false; // no error status set
+  });
+
+  it('should return 404 if conversation not found', async () => {
+    sandbox.stub(ConversationRepository.prototype, 'findConversation').resolves(null);
+
+    await markAsRead(req, res);
+
+    expect(res.status.calledWith(404)).to.be.true;
+    expect(res.json.calledWithMatch({ message: 'Conversation not found' })).to.be.true;
   });
 
   it('should return 500 if repository throws', async () => {

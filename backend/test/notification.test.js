@@ -60,7 +60,7 @@ describe('Get Notification Test', () => {
 
 });
 
-describe('Update markAsRead Notification Test', () => {
+describe('Get UnreadCount Notification Test', () => {
   let notificationController;
   let req, res, stub;
 
@@ -103,6 +103,94 @@ describe('Update markAsRead Notification Test', () => {
     expect(res.json.calledOnceWithMatch({
       success: false,
       message: 'Server error while fetching unread count'
+    })).to.be.true;
+  });
+});
+
+describe('Update markAsRead Notification Test', () => {
+  let req, res, sandbox, controller;
+
+  beforeEach(() => {
+    sandbox = sinon.createSandbox();
+
+    req = {
+      params: { id: new mongoose.Types.ObjectId().toString() },
+      user: { _id: new mongoose.Types.ObjectId() }
+    };
+
+    res = {
+      status: sandbox.stub().returnsThis(),
+      json: sandbox.spy()
+    };
+
+    // Create controller with stubbed repo
+    controller = new NotificationController();
+    controller.notificationRepository = {
+      findById: sandbox.stub(),
+      markAsRead: sandbox.stub()
+    };
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+  });
+
+  it('should mark a notification as read successfully', async () => {
+    const notification = {
+      _id: req.params.id,
+      recipient: req.user._id
+    };
+    const updatedNotification = { ...notification, read: true };
+
+    controller.notificationRepository.findById.resolves(notification);
+    controller.notificationRepository.markAsRead.resolves(updatedNotification);
+
+    await controller.markAsRead(req, res);
+
+    expect(res.json.calledWith({
+      success: true,
+      data: updatedNotification
+    })).to.be.true;
+  });
+
+  it('should return 404 if notification not found', async () => {
+    controller.notificationRepository.findById.resolves(null);
+
+    await controller.markAsRead(req, res);
+
+    expect(res.status.calledWith(404)).to.be.true;
+    expect(res.json.calledWithMatch({
+      success: false,
+      message: 'Notification not found'
+    })).to.be.true;
+  });
+
+  it('should return 403 if notification belongs to another user', async () => {
+    const notification = {
+      _id: req.params.id,
+      recipient: new mongoose.Types.ObjectId() // different user
+    };
+
+    controller.notificationRepository.findById.resolves(notification);
+
+    await controller.markAsRead(req, res);
+
+    expect(res.status.calledWith(403)).to.be.true;
+    expect(res.json.calledWithMatch({
+      success: false,
+      message: 'Unauthorized to modify this notification'
+    })).to.be.true;
+  });
+
+  it('should return 500 if repository throws an error', async () => {
+    controller.notificationRepository.findById.throws(new Error('DB error'));
+
+    await controller.markAsRead(req, res);
+
+    expect(res.status.calledWith(500)).to.be.true;
+    expect(res.json.calledWithMatch({
+      success: false,
+      message: 'Server error while marking notification as read'
     })).to.be.true;
   });
 });
@@ -312,7 +400,7 @@ describe('Get NotificationByType Test', () => {
     sinon.restore();
   });
 
-  it('should return notifications filtered by type with pagination', async () => {
+  it('should return notifications filtered by type', async () => {
     const mockResult = [{ id: 1, type: 'help_post_created' }];
     getStub.resolves(mockResult);
 
