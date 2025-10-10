@@ -1,8 +1,9 @@
-// api.js
+// api.js - validation and axion config
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api',
+  baseURL: 'http://13.211.159.236:5001/api',
+  //baseURL: 'http://localhost:5001/api',
   withCredentials: true, // This is important for sending cookies/auth headers
   headers: {
     'Content-Type': 'application/json',
